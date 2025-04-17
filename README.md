@@ -1,6 +1,6 @@
 # DepVis
 
-DepVis is a dependency visualization tool for .NET projects. It scans a folder for `.dll` and `.exe` files, builds a dependency graph, and provides both XML and visual representations of the dependencies.
+DepVis is a dependency visualization tool for native Windows / Microsoft Visual C++ libraries and executables. It scans a folder for `.dll` and `.exe` files, builds a dependency graph, and provides both XML and visual representations of the dependencies.
 
 ## Features
 
