@@ -172,6 +172,42 @@ namespace DepVis
             string outputPath = Path.Combine(folderPath, "DependencyGraph.dot");
             graphviz.Generate(new FileDotEngine(), outputPath);
             Console.WriteLine($"Graph visualization saved to {outputPath}");
+
+
+            // Generate a PNG file from the DOT file using Graphviz.
+            string pngFilePath = Path.Combine(folderPath, "DependencyGraph.png");
+            try
+            {
+                var process = new System.Diagnostics.Process
+                {
+                    StartInfo = new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName = "dot", // Ensure Graphviz's 'dot' executable is in the system PATH.
+                        Arguments = $"-Tpng \"{outputPath}\" -o \"{pngFilePath}\"",
+                        RedirectStandardOutput = true,
+                        RedirectStandardError = true,
+                        UseShellExecute = false,
+                        CreateNoWindow = true
+                    }
+                };
+
+                process.Start();
+                process.WaitForExit();
+
+                if (process.ExitCode == 0)
+                {
+                    Console.WriteLine($"Graph PNG visualization saved to {pngFilePath}");
+                }
+                else
+                {
+                    string error = process.StandardError.ReadToEnd();
+                    Console.WriteLine($"Error generating PNG: {error}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to generate PNG file: {ex.Message}");
+            }
         }
     }
 
