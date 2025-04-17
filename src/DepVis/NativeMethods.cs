@@ -20,6 +20,14 @@ namespace DepVis
         // P/Invoke declarations for WinAPI functions.
         [DllImport("kernel32.dll", SetLastError = true)]
         public static extern IntPtr LoadLibraryEx(string lpFileName, IntPtr hFile, LoadLibraryFlags dwFlags);
+
+
+        [DllImport("kernel32.dll")]
+        public static extern uint SetErrorMode(uint uMode);
+
+        // Error mode constants
+        public const uint SEM_FAILCRITICALERRORS = 0x0001;
+        public const uint SEM_NOOPENFILEERRORBOX = 0x8000;
     }
 
 

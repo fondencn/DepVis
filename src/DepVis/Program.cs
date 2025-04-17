@@ -54,7 +54,7 @@ namespace DepVis
             // Detect circular dependencies by checking if the file is already in the visited set.
             if (visited.Contains(filePath))
             {
-                Console.WriteLine($"Circular dependency detected: {filePath}");
+                //Console.WriteLine($"Circular dependency detected: {filePath}");
                 return;
             }
 
@@ -67,6 +67,7 @@ namespace DepVis
 
             try
             {
+                Console.WriteLine($"[info] processing file: {filePath}");
                 var dependencies = GetDependencies(filePath); // Get the dependencies of the current file.
                 DependencyGraph[filePath] = dependencies; // Add the dependencies to the graph.
 
@@ -87,11 +88,16 @@ namespace DepVis
         {
             var dependencies = new List<string>();
 
+            // Suppress error message boxes
+            uint previousErrorMode = NativeMethods.SetErrorMode(NativeMethods.SEM_FAILCRITICALERRORS | NativeMethods.SEM_NOOPENFILEERRORBOX);
+
+
             // Use LoadLibraryEx to load the file without resolving references.
             IntPtr hModule = NativeMethods.LoadLibraryEx(filePath, IntPtr.Zero, LoadLibraryFlags.DONT_RESOLVE_DLL_REFERENCES);
             if (hModule == IntPtr.Zero)
             {
                 // If the file cannot be loaded, assume it is not a valid MFC DLL or EXE and skip it.
+                NativeMethods.SetErrorMode(previousErrorMode); // Restore the previous error mode
                 return dependencies;
             }
 
@@ -135,6 +141,8 @@ namespace DepVis
             finally
             {
                 NativeMethods.FreeLibrary(hModule); // Free the loaded module to release resources.
+                NativeMethods.SetErrorMode(previousErrorMode); // Restore the previous error mode
+
             }
 
             return dependencies;
@@ -183,7 +191,7 @@ namespace DepVis
                     StartInfo = new System.Diagnostics.ProcessStartInfo
                     {
                         FileName = "dot", // Ensure Graphviz's 'dot' executable is in the system PATH.
-                        Arguments = $"-Tpng \"{outputPath}\" -o \"{pngFilePath}\"",
+                        Arguments = $"-Tpng \"{outputPath}\" -v -o \"{pngFilePath}\"",
                         RedirectStandardOutput = true,
                         RedirectStandardError = true,
                         UseShellExecute = false,
@@ -191,7 +199,30 @@ namespace DepVis
                     }
                 };
 
+
+                process.OutputDataReceived += (sender, e) =>
+                {
+                    if (!string.IsNullOrEmpty(e.Data))
+                    {
+                        Console.WriteLine($"[dot]: {e.Data}");
+                    }
+                };
+
+                process.ErrorDataReceived += (sender, e) =>
+                {
+                    if (!string.IsNullOrEmpty(e.Data))
+                    {
+                        Console.WriteLine($"[dot error]: {e.Data}");
+                    }
+                };
+                Console.WriteLine($"Graph visualization will now be saved as PNG file to {pngFilePath}...");
                 process.Start();
+                process.BeginOutputReadLine();
+                process.BeginErrorReadLine();
+
+                // Start monitoring the process asynchronously
+                MonitorProcessAsync(process);
+
                 process.WaitForExit();
 
                 if (process.ExitCode == 0)
@@ -209,6 +240,51 @@ namespace DepVis
                 Console.WriteLine($"Failed to generate PNG file: {ex.Message}");
             }
         }
-    }
 
+
+        private static async void MonitorProcessAsync(System.Diagnostics.Process process)
+        {
+            try
+            {
+                while (!process.HasExited)
+                {
+                    // Print CPU and memory usage
+                    Console.WriteLine($"[dot process] CPU: {await GetCpuUsage(process)}%, Memory: {process.WorkingSet64 } bytes");
+
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error monitoring process: {ex.Message}");
+            }
+        }
+
+        private static async Task<double> GetCpuUsage(System.Diagnostics.Process process)
+        {
+            try
+            {
+                // Record the initial processor time and timestamp
+                var startCpuTime = process.TotalProcessorTime;
+                var startTime = DateTime.UtcNow;
+
+                // Wait for the specified interval
+                await Task.Delay(5000);
+
+                // Record the processor time and timestamp after the interval
+                var endCpuTime = process.TotalProcessorTime;
+                var endTime = DateTime.UtcNow;
+
+                // Calculate the CPU usage as a percentage
+                var cpuTimeUsed = (endCpuTime - startCpuTime).TotalMilliseconds;
+                var elapsedTime = (endTime - startTime).TotalMilliseconds;
+                var cpuUsage = ((cpuTimeUsed / elapsedTime) * 100) / Environment.ProcessorCount;
+
+                return Math.Round(cpuUsage, 4);
+            }
+            catch
+            {
+                return 0; // Return 0 if unable to calculate CPU usage
+            }
+        }
+    }
 }
