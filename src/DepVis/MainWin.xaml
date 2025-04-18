@@ -1,0 +1,34 @@
+﻿<Window x:Class="DepVis.MainWin"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:DepVis"
+        mc:Ignorable="d"
+        Title="DepVis" Height="450" Width="800">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Orientation="Horizontal">
+            <TextBlock Text="File:" Margin="5"/>
+            <TextBox Text="{Binding Path, Mode=TwoWay}" Margin="5"/>
+        </StackPanel>
+        <StackPanel Orientation="Horizontal" Grid.Row="1">
+            <Button Content="Build depdendency graph" Command="{Binding ExecuteCommand}" Margin="5"/>
+            <Button Content="Create visualization" Command="{Binding VisualizeCommand}" Margin="5"/>
+        </StackPanel>
+        <TextBox
+            IsReadOnly="True" 
+            VerticalAlignment="Stretch"
+            HorizontalAlignment="Stretch"
+            VerticalScrollBarVisibility="Visible"
+            TextWrapping="Wrap"
+            Text="{Binding Output.Output, Mode=OneWay}"  
+            Margin="5" 
+            Grid.Row="2"/>
+    </Grid>
+</Window>
