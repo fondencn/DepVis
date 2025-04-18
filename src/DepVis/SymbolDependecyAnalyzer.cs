@@ -12,22 +12,22 @@ namespace DepVis
         private  readonly HashSet<string> _ProcessedFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase); // Tracks files already processed to avoid redundant work.
 
 
-        public  void BuildDependencyGraph(string folderPath)
+        public  void BuildDependencyGraph(string folderPath, bool recursíve)
         {
             _rootFolderPath = folderPath; // Set the root folder path for the scan.
             _ProcessedFiles.Clear();
             _DependencyGraph.Clear();
             // Recursively scan the folder for .dll and .exe files.
-            foreach (var file in Directory.EnumerateFiles(folderPath, "*.*", SearchOption.TopDirectoryOnly) // currently non-recursive
+            foreach (var file in Directory.EnumerateFiles(folderPath, "*.*", recursíve ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly) // currently non-recursive
                 .Where(f => f.EndsWith(".dll", StringComparison.OrdinalIgnoreCase) || f.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))) //
             {
                 ProcessFile(file, new HashSet<string>()); // Process each file and build its dependencies.
             }
         }
 
-        public override void ExecuteDependencyCheck(string folderPath)
+        public override void ExecuteDependencyCheck(string folderPath, bool recursíve)
         {
-            BuildDependencyGraph(folderPath); // Build the dependency graph by scanning the folder.
+            BuildDependencyGraph(folderPath, recursíve); // Build the dependency graph by scanning the folder.
 
             string xmlPath = Path.Combine(folderPath, "DependencyGraph.xml");
             SaveGraphAsXml(xmlPath); // Save the dependency graph to an XML file.
@@ -218,19 +218,6 @@ namespace DepVis
                 // Log any errors encountered while processing the file.
                 Output?.AppendLine($"Error processing {filePath}: {ex.Message}");
             }
-        }
-
-        private void SaveGraphAsXml(string xmlPath)
-        {
-            // Save the dependency graph as an XML file.
-            var xDoc = new XDocument(
-                new XElement("DependencyGraph",
-                    _DependencyGraph.Select(kvp =>
-                        new XElement("File",
-                            new XAttribute("Path", kvp.Key),
-                            kvp.Value.Select(dep => new XElement("Dependency", dep))))));
-
-            xDoc.Save(xmlPath);
         }
     }
 }

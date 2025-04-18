@@ -2,7 +2,7 @@
   "profiles": {
     "DepVis": {
       "commandName": "Project",
-      "commandLineArgs": "C:\\tfs_devops\\PE-A3000-AP-Proj\\Common\\BIN"
+      "commandLineArgs": "-pfe C:\\tfs_devops\\PE-A3000-AP-Proj\\Common\\BIN"
     }
   }
 }

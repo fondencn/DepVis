@@ -7,6 +7,7 @@ using System.Windows.Media.Imaging;
 using GraphX.Common.Enums;
 using GraphX.Common.Models;
 using GraphX.Controls;
+using GraphX.Logic.Algorithms.LayoutAlgorithms;
 using GraphX.Logic.Models;
 using QuickGraph;
 
@@ -54,42 +55,67 @@ namespace DepVis
             };
 
             graphArea.LogicCore.Graph = graph;
-            //The Kamada-Kawai (LayoutAlgorithmTypeEnum.KK) layout algorithm is computationally expensive for large graphs.
-            //Switch to a faster algorithm like FR (Fruchterman-Reingold) or Tree if the graph structure allows it:
-            //graphArea.LogicCore.DefaultLayoutAlgorithm = LayoutAlgorithmTypeEnum.KK; // Use Kamada-Kawai layout
-            graphArea.LogicCore.DefaultLayoutAlgorithm = LayoutAlgorithmTypeEnum.FR; // Use Kamada-Kawai layout
-            //The FSA (Force-Scan Algorithm) for overlap removal can be replaced with a simpler algorithm
-            //like None if overlaps are acceptable:
-            //graphArea.LogicCore.DefaultOverlapRemovalAlgorithm = OverlapRemovalAlgorithmTypeEnum.FSA;
-            graphArea.LogicCore.DefaultOverlapRemovalAlgorithm = OverlapRemovalAlgorithmTypeEnum.None;
-            //The SimpleER (Simple Edge Routing) algorithm can be replaced with None to skip edge routing entirely:
-            //graphArea.LogicCore.DefaultEdgeRoutingAlgorithm = EdgeRoutingAlgorithmTypeEnum.SimpleER;
-            graphArea.LogicCore.DefaultEdgeRoutingAlgorithm = EdgeRoutingAlgorithmTypeEnum.None;
-            //The FSA (Force-Scan Algorithm) for overlap removal can be replaced with a simpler
-            //algorithm like None if overlaps are acceptable:
-            graphArea.LogicCore.DefaultOverlapRemovalAlgorithm = OverlapRemovalAlgorithmTypeEnum.None;
 
-            graphArea.LogicCore.AsyncAlgorithmCompute = true;
+            // Configure the layout algorithm.
+            graphArea.LogicCore.DefaultLayoutAlgorithm = LayoutAlgorithmTypeEnum.EfficientSugiyama; 
+            graphArea.LogicCore.DefaultOverlapRemovalAlgorithm = OverlapRemovalAlgorithmTypeEnum.FSA; // Force-Scan Algorithm
+            graphArea.LogicCore.DefaultEdgeRoutingAlgorithm = EdgeRoutingAlgorithmTypeEnum.SimpleER; // Simple Edge Routing
+            graphArea.LogicCore.AsyncAlgorithmCompute = false;
+
+            // Set layout algorithm parameters (e.g., spacing).
+            //var layoutParameters = graphArea.LogicCore.AlgorithmFactory.CreateLayoutParameters(LayoutAlgorithmTypeEnum.FR);
+            //if (layoutParameters is FreeFRLayoutParameters frParams)
+            //{
+            //    frParams.IterationLimit = 1000; // Increase iterations for better distribution
+            //    frParams.AttractionMultiplier = 1.2; // Adjust attraction force
+            //    frParams.RepulsiveMultiplier = 1.0; // Adjust repulsion force
+            //    graphArea.LogicCore.DefaultLayoutAlgorithmParams = frParams;
+            //}
 
             // Generate the graph layout.
             graphArea.GenerateGraph(true);
 
+            // Debug: Log vertex positions.
+            //foreach (var vertex in graphArea.VertexList)
+            //{
+            //    Output?.AppendLine($"Vertex {vertex.Key.Text} position: {vertex.Value.GetPosition().X}, {vertex.Value.GetPosition().Y}");
+            //}
+
+            // Dynamically adjust the GraphArea size based on the layout.
+            double width = 10000;
+            double height = 10000;
+
+            graphArea.Width = width;
+            graphArea.Height = height;
+
             // Render the graph to an image.
             string pngFilePath = Path.Combine(folderPath, "DependencyGraph.png");
-            SaveGraphAsImage(graphArea, pngFilePath);
+            SaveGraphAsImage(graphArea, pngFilePath, (int)width, (int)height);
 
             Output?.AppendLine($"Graph visualization saved to {pngFilePath}");
         }
 
-        private static void SaveGraphAsImage(GraphArea<DataVertex, DataEdge, BidirectionalGraph<DataVertex, DataEdge>> graphArea, string filePath)
+        private static void SaveGraphAsImage(GraphArea<DataVertex, DataEdge, BidirectionalGraph<DataVertex, DataEdge>> graphArea, string filePath, int imageWidth, int imageHeight)
         {
-            // Measure and arrange the graph area.
-            graphArea.Measure(new System.Windows.Size(double.PositiveInfinity, double.PositiveInfinity));
-            graphArea.Arrange(new Rect(graphArea.DesiredSize));
 
-            // Render the graph area to a bitmap.
-            var renderTarget = new RenderTargetBitmap((int)graphArea.ActualWidth, (int)graphArea.ActualHeight, 96, 96, PixelFormats.Pbgra32);
-            renderTarget.Render(graphArea);
+            // Create a DrawingVisual to draw the background and the graph.
+            var drawingVisual = new DrawingVisual();
+            using (var drawingContext = drawingVisual.RenderOpen())
+            {
+                // Draw a grey background.
+                drawingContext.DrawRectangle(Brushes.LightGray, null, new Rect(0, 0, imageWidth, imageHeight));
+
+                // Measure and arrange the graph area.
+                graphArea.Measure(new System.Windows.Size(imageWidth, imageHeight));
+                graphArea.Arrange(new Rect(0, 0, imageWidth, imageHeight));
+
+                // Render the graph area onto the DrawingContext.
+                drawingContext.DrawRectangle(new VisualBrush(graphArea), null, new Rect(0, 0, imageWidth, imageHeight));
+            }
+
+            // Render the DrawingVisual to a RenderTargetBitmap.
+            var renderTarget = new RenderTargetBitmap(imageWidth, imageHeight, 96, 96, PixelFormats.Pbgra32);
+            renderTarget.Render(drawingVisual);
 
             // Save the bitmap as a PNG file.
             var encoder = new PngBitmapEncoder();

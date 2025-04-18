@@ -14,12 +14,26 @@ namespace DepVis
     {
         public MainViewModel(string[] commandLineArgs)
         {
-            if(commandLineArgs.Length > 0)
+            this.ParseCommandLineArgs(commandLineArgs);
+        }
+
+        private void ParseCommandLineArgs(string[] commandLineArgs)
+        {
+            if (commandLineArgs != null && commandLineArgs.Length > 0)
             {
-                Path = commandLineArgs[0];
-                if (!Directory.Exists(Path))
+                Path = commandLineArgs.FirstOrDefault( item  => !item.StartsWith("-")) ?? string.Empty;
+                Recursive = commandLineArgs.Any(item => item.Equals("-r", StringComparison.OrdinalIgnoreCase));
+                Mode = commandLineArgs.Any(item => item.Equals("-pfe", StringComparison.OrdinalIgnoreCase)) ? DependencyAnalyzerMode.PFEHeader : DependencyAnalyzerMode.DebugSymbols;
+                Mode = commandLineArgs.Any(item => item.Equals("-symbols", StringComparison.OrdinalIgnoreCase)) ? DependencyAnalyzerMode.DebugSymbols : Mode;
+                if (string.IsNullOrEmpty(Path))
                 {
-                    Output.AppendLine("Invalid folder path.");
+                    Output.AppendLine("Please provide a folder path.");
+                }
+                else
+                {
+                    Output.AppendLine($"Path: {Path}");
+                    Output.AppendLine($"Recursive: {Recursive}");
+                    Output.AppendLine($"Mode: {Mode}");
                 }
             }
         }
@@ -33,9 +47,24 @@ namespace DepVis
             set => SetProperty(ref _path, value);
         }
 
-        public DependencyAnalyzerMode Mode { get; set; } = DependencyAnalyzerMode.DebugSymbols;
+        private bool _recursive = false;
+        public bool Recursive
+        {
+            get => _recursive;
+            set => SetProperty(ref _recursive, value);
+        }
 
-        public DependencyAnalyzer DependecyAnalyzer { get; set; } = DependencyAnalyzer.Create(DependencyAnalyzerMode.DebugSymbols);
+        private DependencyAnalyzerMode mode = DependencyAnalyzerMode.DebugSymbols;
+        public DependencyAnalyzerMode Mode 
+        { 
+            get => mode;
+            set 
+            {
+                SetProperty(ref mode, value);
+                this.DependencyAnalyzer = DependencyAnalyzer.Create(value);
+            }
+        }
+        private  DependencyAnalyzer DependencyAnalyzer { get; set; } = DependencyAnalyzer.Create(DependencyAnalyzerMode.DebugSymbols);
 
         private ActionCommand? _ExecuteCommand = null;
         public ICommand ExecuteCommand
@@ -75,7 +104,7 @@ namespace DepVis
                 Output.AppendLine("Scan started.");
                 DependencyAnalyzer.Output = this.Output;
                 Visualizer.Output = this.Output;
-                this.DependecyAnalyzer.ExecuteDependencyCheck(Path);
+                this.DependencyAnalyzer.ExecuteDependencyCheck(Path, Recursive);
                 Output.AppendLine("Dependency graph generated successfully.");
             }
             catch (Exception ex)
@@ -86,6 +115,7 @@ namespace DepVis
 
 
         private ActionCommand? _VisualizeCommand = null;
+
         public ICommand VisualizeCommand
         {
             get
@@ -100,7 +130,7 @@ namespace DepVis
 
         public void Visualize(object? obj)
         {
-            Visualizer.VisualizeGraph(this.Path, this.DependecyAnalyzer.DependencyGraph);
+            Visualizer.VisualizeGraph(this.Path, this.DependencyAnalyzer.DependencyGraph);
         }
 
 
@@ -146,7 +176,7 @@ namespace DepVis
 
         public void AppendLine(string line)
         {
-            _output.AppendLine(DateTime.Now.ToString("HH:mm:ss") + "\t" + line);
+            _output.Insert(0,DateTime.Now.ToString("HH:mm:ss") + "\t" + line + "\r\n");
             OnPropertyChanged(nameof(Output));
         }
 
