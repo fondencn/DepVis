@@ -2,6 +2,7 @@
 using System.IO;
 using System.Text;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using GraphX.Common.Enums;
@@ -57,9 +58,9 @@ namespace DepVis
             graphArea.LogicCore.Graph = graph;
 
             // Configure the layout algorithm.
-            graphArea.LogicCore.DefaultLayoutAlgorithm = LayoutAlgorithmTypeEnum.EfficientSugiyama; 
+            graphArea.LogicCore.DefaultLayoutAlgorithm = LayoutAlgorithmTypeEnum.FR; 
             graphArea.LogicCore.DefaultOverlapRemovalAlgorithm = OverlapRemovalAlgorithmTypeEnum.FSA; // Force-Scan Algorithm
-            graphArea.LogicCore.DefaultEdgeRoutingAlgorithm = EdgeRoutingAlgorithmTypeEnum.SimpleER; // Simple Edge Routing
+            graphArea.LogicCore.DefaultEdgeRoutingAlgorithm = EdgeRoutingAlgorithmTypeEnum.Bundling; // Simple Edge Routing
             graphArea.LogicCore.AsyncAlgorithmCompute = false;
 
             // Set layout algorithm parameters (e.g., spacing).
@@ -71,9 +72,32 @@ namespace DepVis
             //    frParams.RepulsiveMultiplier = 1.0; // Adjust repulsion force
             //    graphArea.LogicCore.DefaultLayoutAlgorithmParams = frParams;
             //}
+            // Configure layout parameters for EfficientSugiyama
+            //var layoutParameters = graphArea.LogicCore.AlgorithmFactory.CreateLayoutParameters(LayoutAlgorithmTypeEnum.EfficientSugiyama);
+            //if (layoutParameters is SugiyamaLayoutParameters sugiyamaParams)
+            //{
+            //    sugiyamaParams.HorizontalGap = 200; 
+            //    sugiyamaParams.VerticalGap = 200;
+            //    sugiyamaParams.Simplify = true;
+            //    sugiyamaParams.PositionCalculationMethod = PositionCalculationMethodTypes.PositionBased;
+            //    graphArea.LogicCore.DefaultLayoutAlgorithmParams = sugiyamaParams;
+            //}
 
             // Generate the graph layout.
             graphArea.GenerateGraph(true);
+
+            double width = graphArea.VertexList.Values.Max(v => v.GetPosition().X) + 200; // Add padding
+            double height = graphArea.VertexList.Values.Max(v => v.GetPosition().Y) + 200; // Add padding
+            graphArea.Width = Math.Max(width, 1200); // Minimum width
+            graphArea.Height = Math.Max(height, 800); // Minimum height
+
+            graphArea.Measure(new System.Windows.Size(double.PositiveInfinity, double.PositiveInfinity));
+            graphArea.Arrange(new Rect(0, 0, graphArea.Width, graphArea.Height));
+
+
+            graphArea.Measure(new System.Windows.Size(double.PositiveInfinity, double.PositiveInfinity));
+            graphArea.Arrange(new Rect(0, 0, graphArea.Width, graphArea.Height));
+
 
             // Debug: Log vertex positions.
             //foreach (var vertex in graphArea.VertexList)
@@ -82,17 +106,33 @@ namespace DepVis
             //}
 
             // Dynamically adjust the GraphArea size based on the layout.
-            double width = 10000;
-            double height = 10000;
+            //double width = 10000;
+            //double height = 10000;
 
-            graphArea.Width = width;
-            graphArea.Height = height;
+            //graphArea.Width = width;
+            //graphArea.Height = height;
 
             // Render the graph to an image.
-            string pngFilePath = Path.Combine(folderPath, "DependencyGraph.png");
-            SaveGraphAsImage(graphArea, pngFilePath, (int)width, (int)height);
+            //try
+            //{
+            //    string pngFilePath = Path.Combine(folderPath, "DependencyGraph.png");
+            //    SaveGraphAsImage(graphArea, pngFilePath, (int)width, (int)height);
+            //    Output?.AppendLine($"Graph visualization saved to {pngFilePath}");
+            //}
+            //catch (Exception ex)
+            //{
+            //    Output?.AppendLine($"Error saving graph image: {ex.Message}");
+            //}
+            Output?.AppendLine($"Graph visualization showing as new window...");
+            var window = new Window
+            {
+                Title = $"{folderPath } Dependency Graph",
+                Content = new ScrollViewer() { Content = graphArea, HorizontalScrollBarVisibility = ScrollBarVisibility.Visible, VerticalScrollBarVisibility = ScrollBarVisibility.Visible },
+                Width = 1200,
+                Height = 800
+            };
+            window.Show();
 
-            Output?.AppendLine($"Graph visualization saved to {pngFilePath}");
         }
 
         private static void SaveGraphAsImage(GraphArea<DataVertex, DataEdge, BidirectionalGraph<DataVertex, DataEdge>> graphArea, string filePath, int imageWidth, int imageHeight)

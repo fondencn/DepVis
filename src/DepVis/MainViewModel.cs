@@ -54,7 +54,7 @@ namespace DepVis
             set => SetProperty(ref _recursive, value);
         }
 
-        private DependencyAnalyzerMode mode = DependencyAnalyzerMode.DebugSymbols;
+        private DependencyAnalyzerMode mode = DependencyAnalyzerMode.PFEHeader;
         public DependencyAnalyzerMode Mode 
         { 
             get => mode;
@@ -64,7 +64,7 @@ namespace DepVis
                 this.DependencyAnalyzer = DependencyAnalyzer.Create(value);
             }
         }
-        private  DependencyAnalyzer DependencyAnalyzer { get; set; } = DependencyAnalyzer.Create(DependencyAnalyzerMode.DebugSymbols);
+        private  DependencyAnalyzer DependencyAnalyzer { get; set; } = DependencyAnalyzer.Create(DependencyAnalyzerMode.PFEHeader);
 
         private ActionCommand? _ExecuteCommand = null;
         public ICommand ExecuteCommand
