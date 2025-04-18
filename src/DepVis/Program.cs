@@ -249,7 +249,8 @@ namespace DepVis
                 while (!process.HasExited)
                 {
                     // Print CPU and memory usage
-                    Console.WriteLine($"[dot process] CPU: {await GetCpuUsage(process)}%, Memory: {process.WorkingSet64 } bytes");
+                    Console.WriteLine($"[dot process] running {(DateTime.Now - process.StartTime) } ...");
+                    await Task.Delay(5000);
 
                 }
             }
@@ -259,32 +260,5 @@ namespace DepVis
             }
         }
 
-        private static async Task<double> GetCpuUsage(System.Diagnostics.Process process)
-        {
-            try
-            {
-                // Record the initial processor time and timestamp
-                var startCpuTime = process.TotalProcessorTime;
-                var startTime = DateTime.UtcNow;
-
-                // Wait for the specified interval
-                await Task.Delay(5000);
-
-                // Record the processor time and timestamp after the interval
-                var endCpuTime = process.TotalProcessorTime;
-                var endTime = DateTime.UtcNow;
-
-                // Calculate the CPU usage as a percentage
-                var cpuTimeUsed = (endCpuTime - startCpuTime).TotalMilliseconds;
-                var elapsedTime = (endTime - startTime).TotalMilliseconds;
-                var cpuUsage = ((cpuTimeUsed / elapsedTime) * 100) / Environment.ProcessorCount;
-
-                return Math.Round(cpuUsage, 4);
-            }
-            catch
-            {
-                return 0; // Return 0 if unable to calculate CPU usage
-            }
-        }
     }
 }
