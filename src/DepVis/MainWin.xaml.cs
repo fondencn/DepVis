@@ -66,7 +66,10 @@ namespace DepVis
             {
                 dependentNodes = dependencyGraph.Values.SelectMany(deps => deps).ToHashSet();
             }
-            var rootNodes = allNodes.Except(dependentNodes).ToList();
+            var rootNodes = dependencyGraph
+                    .Where(item => item.Key.Contains(filter ?? "", StringComparison.OrdinalIgnoreCase))
+                    .Where(item => item.Value.Count != 0)
+                    .ToHashSet();
 
             // Step 2: Create a TreeView and populate it with root nodes and their dependencies.
             var treeView = new TreeView();
@@ -74,7 +77,7 @@ namespace DepVis
             List<TreeViewItem> rootItems = new List<TreeViewItem>();
             foreach (var rootNode in rootNodes)
             {
-                 rootItems.Add(CreateTreeViewItem(rootNode, dependencyGraph));
+                 rootItems.Add(CreateTreeViewItem(rootNode.Key, dependencyGraph));
             }
             foreach (var item in rootItems.OrderBy(item => item.Header)) 
             {
