@@ -10,7 +10,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="GraphX" Version="3.0.0" />
     <PackageReference Include="PeNet" Version="5.1.0" />
   </ItemGroup>
 

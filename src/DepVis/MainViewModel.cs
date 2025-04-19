@@ -6,6 +6,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Controls;
 using System.Windows.Input;
 
 namespace DepVis
@@ -38,6 +39,8 @@ namespace DepVis
             }
         }
 
+
+
         public OutputViewModel Output { get; } = new OutputViewModel();
 
         private string _path = string.Empty;
@@ -45,6 +48,17 @@ namespace DepVis
         {
             get => _path;
             set => SetProperty(ref _path, value);
+        }
+
+        private string? _filter = null;
+        public string Filter
+        {
+            get => _filter;
+            set
+            {
+                SetProperty(ref _filter, value);
+                this.DependencyGraphCreated?.Invoke(this, EventArgs.Empty);
+            }
         }
 
         private bool _recursive = false;
@@ -64,7 +78,12 @@ namespace DepVis
                 this.DependencyAnalyzer = DependencyAnalyzer.Create(value);
             }
         }
-        private  DependencyAnalyzer DependencyAnalyzer { get; set; } = DependencyAnalyzer.Create(DependencyAnalyzerMode.PFEHeader);
+        public  DependencyAnalyzer DependencyAnalyzer { get; set; } = DependencyAnalyzer.Create(DependencyAnalyzerMode.PFEHeader);
+
+        public event EventHandler DependencyGraphCreated;
+
+
+
 
         private ActionCommand? _ExecuteCommand = null;
         public ICommand ExecuteCommand
@@ -79,10 +98,11 @@ namespace DepVis
             }
         }
 
-        public void ExecuteScan(object? obj)
+        public async void ExecuteScan(object? obj)
         {
             Output.Clear();
-            Task.Run(() => ExecuteScanAsync()).ConfigureAwait(false); // Run the scan asynchronously
+            await Task.Run(() => ExecuteScanAsync());
+            this.DependencyGraphCreated?.Invoke(this, EventArgs.Empty);
         }
 
         private void ExecuteScanAsync()
@@ -103,9 +123,9 @@ namespace DepVis
             {
                 Output.AppendLine("Scan started.");
                 DependencyAnalyzer.Output = this.Output;
-                Visualizer.Output = this.Output;
                 this.DependencyAnalyzer.ExecuteDependencyCheck(Path, Recursive);
                 Output.AppendLine("Dependency graph generated successfully.");
+
             }
             catch (Exception ex)
             {
@@ -113,25 +133,6 @@ namespace DepVis
             }
         }
 
-
-        private ActionCommand? _VisualizeCommand = null;
-
-        public ICommand VisualizeCommand
-        {
-            get
-            {
-                if (_VisualizeCommand == null)
-                {
-                    _VisualizeCommand = new ActionCommand(Visualize);
-                }
-                return _VisualizeCommand;
-            }
-        }
-
-        public void Visualize(object? obj)
-        {
-            Visualizer.VisualizeGraph(this.Path, this.DependencyAnalyzer.DependencyGraph);
-        }
 
 
 
