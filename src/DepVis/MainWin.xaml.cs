@@ -68,7 +68,7 @@ namespace DepVis
             }
             var rootNodes = dependencyGraph
                     .Where(item => item.Key.Contains(filter ?? "", StringComparison.OrdinalIgnoreCase))
-                    .Where(item => item.Value.Count != 0)
+                    //.Where(item => item.Value.Count != 0)
                     .ToHashSet();
 
             // Step 2: Create a TreeView and populate it with root nodes and their dependencies.
